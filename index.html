@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CHECKLIST LOG20 – OPERAÇÃO VIDROS</title>
+<meta name="theme-color" content="#f58220">
+<style>
+:root {
+  --laranja: #f58220;
+  --preto: #000;
+  --card: #111;
+  --dourado: #e0b94d;
+  --branco: #fff;
+}
+html,body {
+  height:100%;
+  margin:0;
+  background:var(--preto);
+  color:var(--branco);
+  font-family:Segoe UI, Arial, sans-serif;
+}
+header {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:10px;
+  background:var(--laranja);
+  color:#000;
+  font-weight:800;
+}
+header img {
+  height:56px;
+  border-radius:8px;
+  object-fit:contain;
+}
+.container {
+  max-width:820px;
+  margin:16px auto;
+  padding:18px;
+  background:var(--card);
+  border-radius:12px;
+}
+h1 { color:var(--dourado); text-align:left; margin:0 0 8px 0; }
+label { display:block; margin-top:10px; color:var(--branco); font-weight:600; }
+input,textarea {
+  width:100%; padding:10px; border-radius:8px;
+  border:0; background:#222; color:#fff; margin-top:6px; box-sizing:border-box;
+}
+.row { display:flex; gap:10px; }
+.col { flex:1; }
+.start-btn {
+  background:var(--laranja);
+  color:#000;
+  padding:12px;
+  border-radius:10px;
+  border:0;
+  font-weight:800;
+  cursor:pointer;
+}
+.btn-sim {
+  background:#28a745; color:#fff;
+  padding:12px; border-radius:10px; border:0;
+  font-weight:800; cursor:pointer;
+  width:100%; margin-top:12px;
+}
+.btn-nao {
+  background:#c82333; color:#fff;
+  padding:12px; border-radius:10px; border:0;
+  font-weight:800; cursor:pointer;
+  width:100%; margin-top:12px;
+}
+.item-emoji { font-size:44px; text-align:center; margin-top:8px; }
+.item-text { text-align:center; font-size:18px; margin-top:6px; }
+.hidden { display:none; }
+.counter { text-align:center; color:#ccc; margin-top:8px; }
+.footer { font-size:13px; color:#aaa; margin-top:12px; text-align:center; }
+.print-report { background:#fff; color:#000; padding:10px; border-radius:8px; border:0; margin-top:10px; }
+@media print { header, .start-btn, .btn-sim, .btn-nao { display:none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAQAAAC1+jfqAAAAIElEQVQoz2NgGAWjYBSMglEwCkYgqGkQwqGgkxqGgkqGgEAgAO7QMWD2rqpAAAAAElFTkSuQmCC" alt="logo">
+  <div>CHECKLIST LOG20 – OPERAÇÃO VIDROS</div>
+</header>
+
+<div class="container" id="page-start">
+  <h1>Início do Checklist</h1>
+  <label>Data e Hora</label>
+  <input id="dataHoraCampo" readonly>
+  <label>Operador</label>
+  <input id="operador" placeholder="Nome do operador">
+  <div class="row">
+    <div class="col">
+      <label>Máquina</label>
+      <input id="maquina" placeholder="Número da máquina">
+    </div>
+    <div class="col">
+      <label>Horímetro</label>
+      <input id="horimetro" type="number" step="0.1" placeholder="Ex: 3456.7">
+    </div>
+  </div>
+  <div style="margin-top:12px">
+    <button class="start-btn" onclick="startChecklist()">Iniciar Checklist</button>
+  </div>
+</div>
+
+<div class="container hidden" id="page-check">
+  <h1>Checklist Diário</h1>
+  <div id="itemArea">
+    <div class="item-emoji" id="itemEmoji">⚙️</div>
+    <div class="item-text" id="itemText">Item texto</div>
+    <div class="counter" id="counter">Item 1 de 21</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+    <button class="btn-sim" id="btnSim">✅ Sim</button>
+    <button class="btn-nao" id="btnNao">❌ Não</button>
+  </div>
+  <div id="descBox" class="hidden" style="margin-top:12px">
+    <label>Descreva o problema</label>
+    <textarea id="desc" rows="3" placeholder="Detalhe o problema..."></textarea>
+    <div style="margin-top:10px"><button class="start-btn" id="nextBtn">Próximo</button></div>
+  </div>
+</div>
+
+<div class="container hidden" id="page-observacoes">
+  <h1>Observações Finais</h1>
+  <label>Observações gerais</label>
+  <textarea id="observacoes" rows="4" placeholder="Observações gerais..."></textarea>
+  <div style="margin-top:10px; display:flex; gap:10px;">
+    <button class="start-btn" id="btnGenerate" disabled>⏳ Aguarde 3:00</button>
+  </div>
+</div>
+
+<div class="container hidden" id="page-done">
+  <h1>✅ Finalizado</h1>
+  <p>Relatório gerado com sucesso.</p>
+  <div style="display:flex;gap:10px">
+    <button class="start-btn" id="restartBtn">Novo Checklist</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const ITEMS=[
+"Pontos de apoio estão OK?","Painel de instrumentos está OK?","Sensor de banco está OK?",
+"Cinto de segurança está OK?","Buzina está OK?","Sensor de cinto está OK?",
+"Limpador de para-brisas está OK?","Para-brisa e teto estão OK?","Retrovisores estão OK?",
+"Freios estão OK?","Extintor está OK?","LEDs laterais estão OK?","Blue Spot está OK?",
+"Lâmpadas dianteiras estão OK?","Lâmpadas traseiras estão OK?","Sirene de ré está OK?",
+"Ausência de vazamento de óleo?","Mangueiras da torre estão OK?","Garfo está OK?",
+"Pneus estão OK?","Rodas estão OK?"
+];
+let index=0,respostas={},descricoes={},timeLeft=180,timer=null;
+const $=id=>document.getElementById(id);
+document.addEventListener("DOMContentLoaded",()=>{
+  $("dataHoraCampo").value=obterDataHora();
+  $("btnSim").onclick=()=>responder("Sim");
+  $("btnNao").onclick=()=>responder("Não");
+  $("nextBtn").onclick=proximoItem;
+  $("btnGenerate").onclick=gerarPDF;
+  $("restartBtn").onclick=()=>location.reload();
+});
+function obterDataHora(){const d=new Date();return d.toLocaleDateString("pt-BR")+" "+d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});}
+function startChecklist(){
+  const o=$("operador").value.trim(),m=$("maquina").value.trim(),h=$("horimetro").value.trim();
+  if(!o||!m||!h){alert("Preencha todos os campos.");return;}
+  $("page-start").classList.add("hidden");$("page-check").classList.remove("hidden");
+  index=0;respostas={};descricoes={};mostrarItem();iniciarTimer();
+}
+function mostrarItem(){
+  $("itemText").innerText=ITEMS[index];
+  $("counter").innerText=`Item ${index+1} de ${ITEMS.length}`;
+  $("descBox").classList.add("hidden");$("desc").value=descricoes[ITEMS[index]]||"";
+  updateBtns();
+}
+function responder(v){
+  respostas[ITEMS[index]]=v;updateBtns();
+  if(v==="Não"){$("descBox").classList.remove("hidden");$("desc").focus();}
+  else setTimeout(proximoItem,200);
+}
+function proximoItem(){
+  if(respostas[ITEMS[index]]==="Não"){
+    const d=$("desc").value.trim();
+    if(!d){alert("Descreva o problema.");return;}
+    descricoes[ITEMS[index]]=d;
+  }
+  if(index+1<ITEMS.length){index++;mostrarItem();}
+  else{$("page-check").classList.add("hidden");$("page-observacoes").classList.remove("hidden");}
+}
+function iniciarTimer(){
+  const b=$("btnGenerate");b.disabled=true;timeLeft=180;
+  b.innerText="⏳ Aguarde 3:00";if(timer)clearInterval(timer);
+  timer=setInterval(()=>{
+    timeLeft--;
+    const m=Math.floor(timeLeft/60),s=String(timeLeft%60).padStart(2,"0");
+    b.innerText=`⏳ Aguarde ${m}:${s}`;
+    if(timeLeft<=0){clearInterval(timer);b.disabled=false;b.innerText="✅ Gerar Relatório (PDF)";}
+  },1000);
+}
+function updateBtns(){
+  const c=respostas[ITEMS[index]];const s=$("btnSim"),n=$("btnNao");
+  s.style.background="#28a745";n.style.background="#c82333";s.style.opacity="1";n.style.opacity="1";
+  if(c==="Sim"){s.style.background="#7bed9f";n.style.opacity="0.6";}
+  else if(c==="Não"){n.style.background="#ff6b6b";s.style.opacity="0.6";}
+}
+
+const{jsPDF}=window.jspdf;
+function gerarPDF(){
+  if(timeLeft>0){alert("Aguarde 3 minutos.");return;}
+  const op=$("operador").value.trim(),maq=$("maquina").value.trim(),h=$("horimetro").value.trim(),obs=$("observacoes").value.trim(),dh=$("dataHoraCampo").value;
+  const doc=new jsPDF({unit:"pt",format:"a4"});
+  const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight();
+  // Fundo preto
+  doc.setFillColor(0,0,0);doc.rect(0,0,pw,ph,"F");
+  // Cabeçalho laranja
+  doc.setFillColor(245,130,32);doc.rect(0,0,pw,70,"F");
+  doc.setFontSize(18);doc.setTextColor(0,0,0);
+  doc.text("CHECKLIST LOG20 – OPERAÇÃO VIDROS",40,45);
+  doc.setFontSize(11);doc.setTextColor(50,50,50);
+  doc.text(`Emitido por: ${op}`,40,62);
+
+  let y=100;
+  doc.setFontSize(12);doc.setTextColor(224,185,77);
+  doc.text("Identificação",40,y);y+=16;
+  doc.setFontSize(11);doc.setTextColor(255,255,255);
+  doc.text(`Operador: ${op}`,40,y+=16);
+  doc.text(`Máquina: ${maq}`,40,y+=16);
+  doc.text(`Horímetro: ${h}`,40,y+=16);
+  doc.text(`Data/Hora: ${dh}`,40,y+=16);
+  y+=20;doc.setDrawColor(245,130,32);doc.line(36,y,pw-36,y);y+=20;
+
+  doc.setFontSize(11);
+  for(let i=0;i<ITEMS.length;i++){
+    const item=ITEMS[i],r=respostas[item]||"Não respondido";
+    doc.setTextColor(255,255,255);
+    doc.text(`${i+1}. ${item}`,40,y);
+    if(r==="Sim"){doc.setFillColor(124,237,159);doc.rect(pw-120,y-10,60,16,"F");doc.setTextColor(0,60,0);doc.text("SIM",pw-100,y+2);}
+    else if(r==="Não"){doc.setFillColor(255,107,107);doc.rect(pw-120,y-10,60,16,"F");doc.setTextColor(90,0,0);doc.text("NÃO",pw-102,y+2);}
+    else{doc.setTextColor(150,150,150);doc.text("-",pw-100,y+2);}
+    if(descricoes[item]){y+=12;doc.setFontSize(10);doc.setTextColor(255,180,180);doc.text(`→ ${descricoes[item]}`,60,y);doc.setFontSize(11);}
+    y+=20;if(y>740){doc.addPage();doc.setFillColor(0,0,0);doc.rect(0,0,pw,ph,"F");y=60;}
+  }
+
+  y+=10;doc.setDrawColor(245,130,32);doc.line(36,y,pw-36,y);y+=20;
+  doc.setTextColor(224,185,77);doc.setFontSize(12);doc.text("Observações Finais:",40,y);
+  doc.setFontSize(11);doc.setTextColor(255,255,255);
+  const split=doc.splitTextToSize(obs||"Nenhuma observação registrada.",pw-80);
+  doc.text(split,40,y+16);
+  doc.setFontSize(9);doc.setTextColor(224,185,77);
+  doc.text(`Checklist gerado por ${op} — ${new Date().toLocaleString("pt-BR")}`,40,ph-30);
+  doc.save(`Checklist_LOG20_${op||"Operador"}.pdf`);
+  $("page-observacoes").classList.add("hidden");
+  $("page-done").classList.remove("hidden");
+}
+</script>
+</body>
+</html>
